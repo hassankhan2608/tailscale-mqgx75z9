@@ -23,12 +23,12 @@ RUN apt-get -qq update \
     /var/tmp/* \
   && :
 
-# Install Spaceship prompt and zsh plugins
-RUN mkdir -p /usr/local/share/zsh/site-functions /opt && \
-    git clone --depth=1 https://github.com/spaceship-prompt/spaceship-prompt.git /opt/spaceship-prompt && \
-    ln -sf /opt/spaceship-prompt/spaceship.zsh /usr/local/share/zsh/site-functions/prompt_spaceship_setup && \
-    git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions /opt/zsh-autosuggestions && \
-    git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting /opt/zsh-syntax-highlighting
+# Install Spaceship prompt and zsh plugins to system path (part of image, always available)
+RUN git clone --depth=1 https://github.com/spaceship-prompt/spaceship-prompt.git /usr/local/share/zsh/spaceship-prompt && \
+    mkdir -p /usr/local/share/zsh/site-functions && \
+    ln -sf /usr/local/share/zsh/spaceship-prompt/spaceship.zsh /usr/local/share/zsh/site-functions/prompt_spaceship_setup && \
+    git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions /usr/local/share/zsh/zsh-autosuggestions && \
+    git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting /usr/local/share/zsh/zsh-syntax-highlighting
 
 # Configure .zshrc with Spaceship prompt
 RUN echo '# Enable Spaceship prompt' > /root/.zshrc && \
@@ -42,8 +42,8 @@ RUN echo '# Enable Spaceship prompt' > /root/.zshrc && \
     echo 'autoload -U promptinit && promptinit && prompt spaceship' >> /root/.zshrc && \
     echo '' >> /root/.zshrc && \
     echo '# Plugins' >> /root/.zshrc && \
-    echo 'source /opt/zsh-autosuggestions/zsh-autosuggestions.zsh' >> /root/.zshrc && \
-    echo 'source /opt/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh' >> /root/.zshrc
+    echo 'source /usr/local/share/zsh/zsh-autosuggestions/zsh-autosuggestions.zsh' >> /root/.zshrc && \
+    echo 'source /usr/local/share/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh' >> /root/.zshrc
 
 # Set zsh as default shell
 RUN usermod -s /usr/bin/zsh root
@@ -53,5 +53,8 @@ COPY run-tailscale.sh /render/
 
 COPY install-tailscale.sh /tmp
 RUN /tmp/install-tailscale.sh && rm -r /tmp/*
+
+# Install OpenCode AI
+RUN curl -fsSL https://opencode.ai/install | bash
 
 CMD ./run-tailscale.sh
