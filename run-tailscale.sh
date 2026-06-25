@@ -2,20 +2,13 @@
 
 # ===== Persistent Storage Setup =====
 PERSIST_DIR="/data"
-mkdir -p $PERSIST_DIR/{tailscale,home,root,opt}
+mkdir -p $PERSIST_DIR/{tailscale,home,root}
 
 # Make /root persistent (zsh config, ssh keys, etc.)
 if [ ! -L /root ]; then
   echo "Setting up persistent /root..."
   cp -an /root/. $PERSIST_DIR/root/ 2>/dev/null || true
   rm -rf /root && ln -sf $PERSIST_DIR/root /root
-fi
-
-# Make /opt persistent (spaceship prompt, zsh plugins, etc.)
-if [ ! -L /opt ]; then
-  echo "Setting up persistent /opt..."
-  cp -an /opt/. $PERSIST_DIR/opt/ 2>/dev/null || true
-  rm -rf /opt && ln -sf $PERSIST_DIR/opt /opt
 fi
 
 # Make /home persistent
@@ -31,7 +24,15 @@ fi
 # is stored in a base64-encoded env var and restored here.
 if [ -n "$TAILSCALE_STATE_BASE64" ]; then
   echo "Restoring Tailscale state from TAILSCALE_STATE_BASE64..."
-  echo "$TAILSCALE_STATE_BASE64" | base64 -d > $PERSIST_DIR/tailscale/tailscaled.state 2>/dev/null || true
+  # Decode and validate it's real JSON before writing
+  DECODED=$(echo "$TAILSCALE_STATE_BASE64" | base64 -d 2>/dev/null) || true
+  if echo "$DECODED" | head -c1 | grep -q '{' 2>/dev/null; then
+    echo "$DECODED" > $PERSIST_DIR/tailscale/tailscaled.state
+    echo "State restored successfully."
+  else
+    echo "WARNING: TAILSCALE_STATE_BASE64 does not contain valid JSON (starts with '$(echo "$DECODED" | head -c20)'). Skipping restore."
+    echo "The env var may be corrupted or truncated. Clear it and do a fresh deploy to generate a new one."
+  fi
 fi
 
 export TS_STATE_DIR=$PERSIST_DIR/tailscale
