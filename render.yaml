@@ -13,7 +13,7 @@ services:
       - key: TS_EXTRA_ARGS
         value: "--ssh --accept-dns --accept-routes"
     disk:
-      name: tailscale-state
-      mountPath: /var/lib/tailscale
+      name: tailscale-data
+      mountPath: /data
       sizeGB: 1
 
