@@ -25,6 +25,15 @@ if [ ! -L /home ]; then
   rm -rf /home && ln -sf $PERSIST_DIR/home /home
 fi
 
+# ===== Restore Tailscale state from env var (free-tier workaround) =====
+# Render free tier doesn't support persistent disks, so each deploy wipes /data.
+# To keep the same Tailscale node identity across deploys, the state file
+# is stored in a base64-encoded env var and restored here.
+if [ -n "$TAILSCALE_STATE_BASE64" ]; then
+  echo "Restoring Tailscale state from TAILSCALE_STATE_BASE64..."
+  echo "$TAILSCALE_STATE_BASE64" | base64 -d > $PERSIST_DIR/tailscale/tailscaled.state 2>/dev/null || true
+fi
+
 export TS_STATE_DIR=$PERSIST_DIR/tailscale
 
 # ===== Start Tailscale =====
@@ -47,6 +56,21 @@ done
 
 tailscale_ip=$(/render/tailscale ip)
 echo "Tailscale is up at IP ${tailscale_ip}"
+
+# ===== Capture Tailscale state for future deploys (first run only) =====
+if [ -z "$TAILSCALE_STATE_BASE64" ] && [ -f "$PERSIST_DIR/tailscale/tailscaled.state" ]; then
+  STATE_B64=$(base64 -w0 < "$PERSIST_DIR/tailscale/tailscaled.state")
+  echo ""
+  echo "===================================================================="
+  echo "  IMPORTANT: Save this as a Render secret env var to keep the same"
+  echo "  Tailscale node across future deploys!"
+  echo ""
+  echo "  Name: TAILSCALE_STATE_BASE64"
+  echo "===================================================================="
+  echo "$STATE_B64"
+  echo "===================================================================="
+  echo ""
+fi
 
 # ===== Health Check Server (so Render marks deploy as Live) =====
 echo "Starting health check server on port ${PORT:-10000}..."
