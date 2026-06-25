@@ -61,12 +61,16 @@ echo "Tailscale is up at IP ${tailscale_ip}"
 # ===== Capture Tailscale state for future deploys (first run only) =====
 if [ -z "$TAILSCALE_STATE_BASE64" ] && [ -f "$PERSIST_DIR/tailscale/tailscaled.state" ]; then
   STATE_B64=$(base64 -w0 < "$PERSIST_DIR/tailscale/tailscaled.state")
+  # Save to a known file so you can cat/copy it via SSH
+  STATE_FILE="$PERSIST_DIR/tailscale/state.base64"
+  echo "$STATE_B64" > "$STATE_FILE"
   echo ""
   echo "===================================================================="
-  echo "  IMPORTANT: Save this as a Render secret env var to keep the same"
-  echo "  Tailscale node across future deploys!"
+  echo "  Tailscale state saved to $STATE_FILE"
+  echo "  (SSH in and run: cat $STATE_FILE)"
   echo ""
-  echo "  Name: TAILSCALE_STATE_BASE64"
+  echo "  To keep the same node across future deploys, save this as a"
+  echo "  Render secret env var named TAILSCALE_STATE_BASE64:"
   echo "===================================================================="
   echo "$STATE_B64"
   echo "===================================================================="
