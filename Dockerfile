@@ -15,6 +15,7 @@ RUN apt-get -qq update \
     zsh \
     git \
     curl \
+    jq \
   > /dev/null \
   && apt-get -qq clean \
   && rm -rf \

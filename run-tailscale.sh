@@ -26,12 +26,12 @@ if [ -n "$TAILSCALE_STATE_BASE64" ]; then
   echo "Restoring Tailscale state from TAILSCALE_STATE_BASE64..."
   # Decode and validate it's real JSON before writing
   DECODED=$(echo "$TAILSCALE_STATE_BASE64" | base64 -d 2>/dev/null) || true
-  if echo "$DECODED" | head -c1 | grep -q '{' 2>/dev/null; then
+  if echo "$DECODED" | jq . >/dev/null 2>&1; then
     echo "$DECODED" > $PERSIST_DIR/tailscale/tailscaled.state
     echo "State restored successfully."
   else
-    echo "WARNING: TAILSCALE_STATE_BASE64 does not contain valid JSON (starts with '$(echo "$DECODED" | head -c20)'). Skipping restore."
-    echo "The env var may be corrupted or truncated. Clear it and do a fresh deploy to generate a new one."
+    echo "WARNING: TAILSCALE_STATE_BASE64 is corrupted (invalid JSON). Skipping restore."
+    echo "Clear the env var in Render Dashboard and do a fresh deploy to generate a clean one."
   fi
 fi
 
